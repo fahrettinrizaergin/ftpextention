@@ -1,0 +1,474 @@
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  gap: 10px;
+  padding: 12px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 900px) {
+  .layout-grid {
+    grid-template-columns: minmax(240px, 320px) 1fr;
+  }
+}
+
+.panel {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 90%, var(--vscode-editor-foreground) 10%);
+  padding: 10px;
+  min-height: 280px;
+}
+
+.panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.accordion-trigger-row {
+  margin-bottom: 4px;
+}
+
+.accordion-toggle {
+  font-weight: 600;
+}
+
+.accordion-body.collapsed {
+  display: none;
+}
+
+.panel-title-row h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.manager-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.path-input {
+  min-width: 180px;
+}
+
+.connections-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.connection-item {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.connection-item.active {
+  border-color: var(--vscode-button-background);
+  background: color-mix(in srgb, var(--vscode-button-background) 18%, transparent);
+}
+
+.connection-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.connection-title {
+  font-weight: 600;
+}
+
+.connection-subtitle {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+.status-pill {
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border: 1px solid var(--vscode-panel-border);
+}
+
+.status-connected {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.status-error {
+  color: var(--vscode-testing-iconFailed);
+}
+
+.status-disconnected {
+  color: var(--vscode-descriptionForeground);
+}
+
+.connection-actions {
+  display: flex;
+  gap: 6px;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 6px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  padding: 6px 8px;
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  opacity: 0.92;
+}
+
+.btn-primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.btn-secondary {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.btn-ghost {
+  border-color: var(--vscode-panel-border);
+  background: transparent;
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.icon-btn {
+  min-width: 34px;
+  padding: 4px 8px;
+}
+
+.empty-state {
+  color: var(--vscode-descriptionForeground);
+  padding: 12px 4px;
+}
+
+.input-with-action {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+
+.tree-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tree-row:hover {
+  background: color-mix(in srgb, var(--vscode-editor-foreground) 6%, transparent);
+}
+
+.tree-main {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.tree-toggle {
+  width: 18px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.tree-toggle.placeholder {
+  visibility: hidden;
+}
+
+.entry-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  position: relative;
+}
+
+.entry-icon.folder {
+  border: 1px solid var(--vscode-symbolIcon-folderForeground);
+  border-radius: 2px;
+}
+
+.entry-icon.folder::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  width: 6px;
+  height: 2px;
+  background: var(--vscode-symbolIcon-folderForeground);
+  border-radius: 2px 2px 0 0;
+}
+
+.entry-icon.file {
+  border: 1px solid var(--vscode-symbolIcon-fileForeground);
+  border-radius: 2px;
+}
+
+.tree-name {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-indent {
+  width: calc(var(--depth) * 16px);
+  min-width: calc(var(--depth) * 16px);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, black 45%, transparent);
+  z-index: 20;
+  backdrop-filter: blur(2px);
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-card {
+  width: min(560px, 95vw);
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 10px;
+  background: var(--vscode-editor-background);
+  padding: 12px;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 620px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feedback-row,
+.actions-row {
+  grid-column: 1 / -1;
+}
+
+.form-feedback {
+  min-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--vscode-testing-iconFailed);
+}
+
+.form-feedback.success {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.toast-root {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 25;
+}
+
+.toast {
+  min-width: 220px;
+  max-width: 360px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-background);
+  box-shadow: 0 6px 16px color-mix(in srgb, black 35%, transparent);
+  animation: fadein 180ms ease-out;
+}
+
+.toast.success {
+  border-color: var(--vscode-testing-iconPassed);
+}
+
+.toast.error {
+  border-color: var(--vscode-testing-iconFailed);
+}
+
+.context-menu {
+  position: fixed;
+  min-width: 190px;
+  border: 1px solid var(--vscode-menu-border);
+  background: var(--vscode-menu-background);
+  color: var(--vscode-menu-foreground);
+  border-radius: 8px;
+  padding: 6px;
+  z-index: 40;
+  box-shadow: 0 10px 24px color-mix(in srgb, black 35%, transparent);
+}
+
+.context-menu.hidden {
+  display: none;
+}
+
+.context-menu button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.context-menu button:hover {
+  background: var(--vscode-menu-selectionBackground);
+  color: var(--vscode-menu-selectionForeground);
+}
+
+.context-menu button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src {{cspSource}} data:; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{{styleUri}}" />
+    <title>Remote File Manager</title>
+  </head>
+  <body>
+    <div id="app" class="app-shell">
+      <header class="app-header">
+        <h1>Remote Connections</h1>
+        <button id="openCreateModalBtn" class="btn btn-primary">+</button>
+      </header>
+
+      <div class="layout-grid">
+        <section class="panel connections-panel">
+          <div class="panel-title-row accordion-trigger-row">
+            <button id="toggleConnectionsBtn" class="btn btn-ghost accordion-toggle" aria-expanded="true">
+              Saved Connections
+            </button>
+            <button id="refreshConnectionsBtn" class="btn btn-ghost">Refresh</button>
+          </div>
+          <div id="connectionsAccordionBody" class="accordion-body">
+            <div id="connectionsEmptyState" class="empty-state">No connections saved.</div>
+            <ul id="connectionsList" class="connections-list"></ul>
+          </div>
+        </section>
+
+        <section class="panel manager-panel">
+          <div class="manager-toolbar">
+            <div class="toolbar-left">
+              <input id="pathInput" type="text" class="path-input" placeholder="/" />
+              <button id="goPathBtn" class="btn btn-secondary">Go</button>
+            </div>
+            <div class="toolbar-right">
+              <button id="uploadBtn" class="btn btn-secondary icon-btn" title="Upload" aria-label="Upload">⤴</button>
+              <button id="createFolderBtn" class="btn btn-secondary icon-btn" title="New Folder" aria-label="New Folder">📁+</button>
+              <button id="createFileBtn" class="btn btn-secondary icon-btn" title="New File" aria-label="New File">📄+</button>
+            </div>
+          </div>
+
+          <div id="managerEmptyState" class="empty-state">Select a connection to browse files.</div>
+          <div id="treeContainer" class="tree-container"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="connectionModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modalTitle">Add Connection</h3>
+          <button id="closeModalBtn" class="btn btn-icon" aria-label="Close">x</button>
+        </div>
+
+        <form id="connectionForm" class="form-grid">
+          <label>
+            <span>Connection Name</span>
+            <input id="nameInput" type="text" maxlength="60" placeholder="Optional" />
+          </label>
+
+          <label>
+            <span>Protocol</span>
+            <select id="protocolInput">
+              <option value="ssh">SSH</option>
+              <option value="sftp">SFTP</option>
+              <option value="ftp">FTP</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Server Address</span>
+            <input id="serverAddressInput" type="text" required />
+          </label>
+
+          <label>
+            <span>Server Port</span>
+            <input id="portInput" type="number" min="1" max="65535" required />
+          </label>
+
+          <label>
+            <span>Username</span>
+            <input id="usernameInput" type="text" required />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input id="passwordInput" type="password" required />
+          </label>
+
+          <label>
+            <span>Remote Path</span>
+            <div class="input-with-action">
+              <input id="remotePathInput" type="text" required placeholder="/" />
+              <button id="pickRemotePathBtn" type="button" class="btn btn-ghost">Select</button>
+            </div>
+          </label>
+
+          <label>
+            <span>Local Path</span>
+            <div class="input-with-action">
+              <input id="localPathInput" type="text" required />
+              <button id="pickLocalPathBtn" type="button" class="btn btn-ghost">Select</button>
+            </div>
+          </label>
+
+          <div class="feedback-row">
+            <span id="formFeedback" class="form-feedback"></span>
+          </div>
+
+          <div class="actions-row">
+            <button id="testConnectionBtn" type="button" class="btn btn-secondary">Test Connection</button>
+            <button id="saveConnectionBtn" type="submit" class="btn btn-primary">Save Connection</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="toastRoot" class="toast-root"></div>
+    <div id="contextMenu" class="context-menu hidden"></div>
+
+    <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
+  </body>
+</html>
