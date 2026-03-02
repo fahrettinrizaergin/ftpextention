@@ -11,6 +11,8 @@ export type WebviewRequestMessage =
   | { type: 'addConnection'; payload: ConnectionInput }
   | { type: 'updateConnection'; payload: ConnectionInput & { id: string } }
   | { type: 'removeConnection'; payload: { id: string } }
+  | { type: 'disconnectConnection'; payload: { id: string } }
+  | { type: 'openTerminal'; payload: { id: string } }
   | { type: 'testConnection'; payload: ConnectionInput }
   | { type: 'testSavedConnection'; payload: { id: string } }
   | { type: 'listDirectory'; payload: DirectoryRequest }

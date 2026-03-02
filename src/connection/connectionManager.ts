@@ -42,6 +42,10 @@ export class ConnectionManager {
     return connection;
   }
 
+  async getConnectionRecordForAuth(connectionId: string): Promise<ConnectionRecord> {
+    return this.getConnectionRecord(connectionId);
+  }
+
   async addConnection(input: ConnectionInput): Promise<ConnectionMetadata> {
     const sanitizedInput = sanitizeConnectionInput({
       ...input,

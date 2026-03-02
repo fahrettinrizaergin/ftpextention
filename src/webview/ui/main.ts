@@ -382,6 +382,14 @@ function handleIncomingMessage(message: WebviewResponseMessage): void {
 
     case 'connectionStatus': {
       state.statuses.set(message.payload.connectionId, message.payload.status);
+      if (message.payload.status === 'disconnected' && state.selectedConnectionId === message.payload.connectionId) {
+        state.selectedConnectionId = null;
+        state.rootPath = '/';
+        state.directoryCache.clear();
+        state.expandedFolders.clear();
+        pathInput.value = '/';
+        renderFileManager();
+      }
       renderConnections();
       return;
     }
@@ -468,6 +476,10 @@ function renderConnections(): void {
       openModal(connection);
     });
 
+    const terminalButton = createActionButton('Terminal', () => {
+      postMessage({ type: 'openTerminal', payload: { id: connection.id } });
+    });
+
     const deleteButton = createActionButton('Delete', () => {
       if (!window.confirm(`Delete ${connection.name}?`)) {
         return;
@@ -476,7 +488,18 @@ function renderConnections(): void {
       postMessage({ type: 'removeConnection', payload: { id: connection.id } });
     });
 
-    for (const button of [testButton, editButton, deleteButton]) {
+    const disconnectButton = createActionButton('Disconnect', () => {
+      postMessage({ type: 'disconnectConnection', payload: { id: connection.id } });
+    });
+
+    const actionButtons = [testButton, editButton];
+    if (connection.protocol === 'ssh' || connection.protocol === 'sftp') {
+      actionButtons.push(terminalButton);
+    }
+    actionButtons.push(disconnectButton);
+    actionButtons.push(deleteButton);
+
+    for (const button of actionButtons) {
       button.addEventListener('click', (event) => {
         event.stopPropagation();
       });
@@ -509,7 +532,7 @@ function renderFileManager(): void {
   treeContainer.textContent = '';
   const hasSelection = Boolean(state.selectedConnectionId);
 
-  managerEmptyState.style.display = hasSelection ? 'none' : 'block';
+  managerEmptyState.style.display = 'none';
   uploadBtn.disabled = !hasSelection;
   createFolderBtn.disabled = !hasSelection;
   createFileBtn.disabled = !hasSelection;

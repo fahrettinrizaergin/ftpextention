@@ -81,6 +81,42 @@ export class RemoteManagerWebviewProvider implements vscode.WebviewViewProvider 
           return;
         }
 
+        case 'disconnectConnection': {
+          await this.postMessage({
+            type: 'connectionStatus',
+            payload: { connectionId: message.payload.id, status: 'disconnected' }
+          });
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: 'Disconnected.' }
+          });
+          return;
+        }
+
+        case 'openTerminal': {
+          const connection = await this.connectionManager.getConnectionRecordForAuth(message.payload.id);
+          if (connection.protocol === 'ftp') {
+            throw new Error('Integrated terminal is available only for SSH/SFTP connections.');
+          }
+
+          const terminal = vscode.window.createTerminal({
+            name: `Remote: ${connection.name}`,
+            env: {
+              SSHPASS: connection.password
+            }
+          });
+
+          const command = [
+            'if command -v sshpass >/dev/null 2>&1; then',
+            `sshpass -e ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=accept-new ${this.shellQuote(connection.username)}@${this.shellQuote(connection.serverAddress)} -p ${String(connection.port)};`,
+            "else echo 'sshpass is not installed. Install it to use passwordless terminal login from the extension.';",
+            'fi'
+          ].join(' ');
+          terminal.show(true);
+          terminal.sendText(command, true);
+          return;
+        }
+
         case 'testConnection': {
           await this.connectionManager.testConnection(message.payload);
           await this.postMessage({
@@ -411,6 +447,8 @@ export class RemoteManagerWebviewProvider implements vscode.WebviewViewProvider 
       'addConnection',
       'updateConnection',
       'removeConnection',
+      'disconnectConnection',
+      'openTerminal',
       'testConnection',
       'testSavedConnection',
       'listDirectory',
@@ -454,5 +492,9 @@ export class RemoteManagerWebviewProvider implements vscode.WebviewViewProvider 
     }
 
     return 'Unknown error';
+  }
+
+  private shellQuote(value: string): string {
+    return `'${value.replace(/'/g, `'\"'\"'`)}'`;
   }
 }

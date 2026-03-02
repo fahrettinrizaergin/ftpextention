@@ -14,6 +14,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const ftpService = new FtpService();
   const connectionManager = new ConnectionManager(storageService, sshService, ftpService, logger);
   const remoteFileSyncService = new RemoteFileSyncService(context, connectionManager, logger);
+  void remoteFileSyncService.initialize();
 
   const webviewProvider = new RemoteManagerWebviewProvider(
     context,
@@ -44,7 +45,13 @@ export function activate(context: vscode.ExtensionContext): void {
       void remoteFileSyncService.handleDocumentSaved(document);
     })
   );
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      void remoteFileSyncService.handleDocumentClosed(document);
+    })
+  );
 
+  context.subscriptions.push(remoteFileSyncService);
   context.subscriptions.push(logger);
 }
 
