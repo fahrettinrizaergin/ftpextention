@@ -166,6 +166,27 @@ export class SshService implements ProtocolService {
     });
   }
 
+  async setPermissions(connection: ConnectionRecord, remotePath: string, permissions: string): Promise<void> {
+    const sanitizedPath = normalizeRemotePath(remotePath);
+    const parsedPermissions = Number.parseInt(permissions, 8);
+    if (!Number.isInteger(parsedPermissions)) {
+      throw new Error('Permissions must be a valid octal value (e.g. 755).');
+    }
+
+    await this.withClient(connection, async (client) => {
+      const sftp = await this.getSftp(client);
+      await new Promise<void>((resolve, reject) => {
+        sftp.chmod(sanitizedPath, parsedPermissions, (error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    });
+  }
+
   async copyPath(
     connection: ConnectionRecord,
     sourcePath: string,

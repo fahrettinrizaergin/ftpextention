@@ -213,6 +213,32 @@ export class ConnectionManager {
     );
   }
 
+  async renamePath(connectionId: string, sourcePath: string, newName: string): Promise<string> {
+    const safeName = sanitizeRemoteSegment(newName);
+    if (!safeName) {
+      throw new Error('New name is invalid.');
+    }
+
+    const source = normalizeRemotePath(sourcePath);
+    const parent = path.posix.dirname(source);
+    const destination = path.posix.join(parent, safeName);
+    await this.movePath(connectionId, source, destination);
+    return destination;
+  }
+
+  async setPermissions(connectionId: string, remotePath: string, permissions: string): Promise<void> {
+    if (!/^[0-7]{3,4}$/.test(permissions)) {
+      throw new Error('Permissions must be octal, e.g. 755 or 0755.');
+    }
+
+    const connection = await this.getConnectionRecord(connectionId);
+    await this.getService(connection.protocol).setPermissions(
+      connection,
+      normalizeRemotePath(remotePath),
+      permissions
+    );
+  }
+
   async copyPath(connectionId: string, sourcePath: string, destinationPath: string, isDirectory: boolean): Promise<void> {
     const connection = await this.getConnectionRecord(connectionId);
     await this.getService(connection.protocol).copyPath(

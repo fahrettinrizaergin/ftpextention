@@ -9,6 +9,7 @@ export interface ProtocolService {
   createFolder(connection: ConnectionRecord, remotePath: string): Promise<void>;
   createFile(connection: ConnectionRecord, remotePath: string): Promise<void>;
   movePath(connection: ConnectionRecord, sourcePath: string, destinationPath: string): Promise<void>;
+  setPermissions(connection: ConnectionRecord, remotePath: string, permissions: string): Promise<void>;
   copyPath(connection: ConnectionRecord, sourcePath: string, destinationPath: string, isDirectory: boolean): Promise<void>;
   compressPath(connection: ConnectionRecord, sourcePath: string, archivePath: string): Promise<void>;
   extractArchive(connection: ConnectionRecord, archivePath: string, destinationPath: string): Promise<void>;

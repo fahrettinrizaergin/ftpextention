@@ -252,6 +252,118 @@ export class RemoteManagerWebviewProvider implements vscode.WebviewViewProvider 
           return;
         }
 
+        case 'createFolderInteractive': {
+          const folderName = await vscode.window.showInputBox({
+            title: 'Create Folder',
+            prompt: 'Enter folder name',
+            placeHolder: 'new-folder'
+          });
+          if (!folderName) {
+            return;
+          }
+
+          const folderPath = await this.connectionManager.createFolder(
+            message.payload.connectionId,
+            message.payload.parentPath,
+            folderName
+          );
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: `Created folder ${path.posix.basename(folderPath)}` }
+          });
+          return;
+        }
+
+        case 'createFileInteractive': {
+          const fileName = await vscode.window.showInputBox({
+            title: 'Create File',
+            prompt: 'Enter file name',
+            placeHolder: 'new-file.txt',
+            value: 'new-file.txt'
+          });
+          if (!fileName) {
+            return;
+          }
+
+          const filePath = await this.connectionManager.createFile(
+            message.payload.connectionId,
+            message.payload.parentPath,
+            fileName
+          );
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: `Created file ${path.posix.basename(filePath)}` }
+          });
+          return;
+        }
+
+        case 'renamePathInteractive': {
+          const newName = await vscode.window.showInputBox({
+            title: 'Rename',
+            prompt: 'Enter new name',
+            value: message.payload.currentName
+          });
+          if (!newName) {
+            return;
+          }
+
+          const destinationPath = await this.connectionManager.renamePath(
+            message.payload.connectionId,
+            message.payload.sourcePath,
+            newName
+          );
+
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: `Renamed to ${path.posix.basename(destinationPath)}` }
+          });
+          return;
+        }
+
+        case 'setPermissionsInteractive': {
+          const permissions = await vscode.window.showInputBox({
+            title: 'Permission Change',
+            prompt: 'Enter octal permissions (e.g. 755)',
+            value: '755'
+          });
+          if (!permissions) {
+            return;
+          }
+
+          await this.connectionManager.setPermissions(
+            message.payload.connectionId,
+            message.payload.remotePath,
+            permissions
+          );
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: `Permissions updated to ${permissions}` }
+          });
+          return;
+        }
+
+        case 'deletePathInteractive': {
+          const selection = await vscode.window.showWarningMessage(
+            `Delete ${message.payload.name}?`,
+            { modal: true },
+            'Delete'
+          );
+          if (selection !== 'Delete') {
+            return;
+          }
+
+          await this.connectionManager.deletePath(
+            message.payload.connectionId,
+            message.payload.remotePath,
+            message.payload.isDirectory
+          );
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: `Deleted ${message.payload.name}` }
+          });
+          return;
+        }
+
         case 'deletePath': {
           await this.connectionManager.deletePath(
             message.payload.connectionId,
@@ -290,6 +402,33 @@ export class RemoteManagerWebviewProvider implements vscode.WebviewViewProvider 
           await this.postMessage({
             type: 'operationSuccess',
             payload: { message: `Created file ${path.posix.basename(filePath)}` }
+          });
+          return;
+        }
+
+        case 'renamePath': {
+          const destinationPath = await this.connectionManager.renamePath(
+            message.payload.connectionId,
+            message.payload.sourcePath,
+            message.payload.newName
+          );
+
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: `Renamed to ${path.posix.basename(destinationPath)}` }
+          });
+          return;
+        }
+
+        case 'setPermissions': {
+          await this.connectionManager.setPermissions(
+            message.payload.connectionId,
+            message.payload.remotePath,
+            message.payload.permissions
+          );
+          await this.postMessage({
+            type: 'operationSuccess',
+            payload: { message: `Permissions updated to ${message.payload.permissions}` }
           });
           return;
         }
@@ -456,9 +595,16 @@ export class RemoteManagerWebviewProvider implements vscode.WebviewViewProvider 
       'downloadFile',
       'uploadFile',
       'pickLocalPath',
+      'createFolderInteractive',
+      'createFileInteractive',
+      'renamePathInteractive',
+      'setPermissionsInteractive',
+      'deletePathInteractive',
       'deletePath',
       'createFolder',
       'createFile',
+      'renamePath',
+      'setPermissions',
       'copyPath',
       'movePath',
       'compressPath',

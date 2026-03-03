@@ -20,9 +20,16 @@ export type WebviewRequestMessage =
   | { type: 'downloadFile'; payload: { connectionId: string; remotePath: string } }
   | { type: 'uploadFile'; payload: { connectionId: string; remoteDirectory: string } }
   | { type: 'pickLocalPath' }
+  | { type: 'createFolderInteractive'; payload: { connectionId: string; parentPath: string } }
+  | { type: 'createFileInteractive'; payload: { connectionId: string; parentPath: string } }
+  | { type: 'renamePathInteractive'; payload: { connectionId: string; sourcePath: string; currentName: string } }
+  | { type: 'setPermissionsInteractive'; payload: { connectionId: string; remotePath: string } }
+  | { type: 'deletePathInteractive'; payload: { connectionId: string; remotePath: string; isDirectory: boolean; name: string } }
   | { type: 'deletePath'; payload: { connectionId: string; remotePath: string; isDirectory: boolean } }
   | { type: 'createFolder'; payload: { connectionId: string; parentPath: string; folderName: string } }
   | { type: 'createFile'; payload: { connectionId: string; parentPath: string; fileName: string } }
+  | { type: 'renamePath'; payload: { connectionId: string; sourcePath: string; newName: string } }
+  | { type: 'setPermissions'; payload: { connectionId: string; remotePath: string; permissions: string } }
   | { type: 'copyPath'; payload: { connectionId: string; sourcePath: string; destinationPath: string; isDirectory: boolean } }
   | { type: 'movePath'; payload: { connectionId: string; sourcePath: string; destinationPath: string } }
   | { type: 'compressPath'; payload: { connectionId: string; sourcePath: string; archivePath: string } }

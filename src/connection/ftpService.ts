@@ -79,6 +79,12 @@ export class FtpService implements ProtocolService {
     });
   }
 
+  async setPermissions(connection: ConnectionRecord, remotePath: string, permissions: string): Promise<void> {
+    await this.withClient(connection, async (client) => {
+      await client.send(`SITE CHMOD ${permissions} ${normalizeRemotePath(remotePath)}`);
+    });
+  }
+
   async copyPath(
     connection: ConnectionRecord,
     sourcePath: string,

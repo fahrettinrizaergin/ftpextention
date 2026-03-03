@@ -11,6 +11,7 @@ declare function acquireVsCodeApi<T>(): VsCodeApi<T>;
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'error';
 type ClipboardAction = 'copy' | 'cut';
+const entryNameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 interface ClipboardPayload {
   action: ClipboardAction;
@@ -162,11 +163,44 @@ function bindEvents(): void {
     handleIncomingMessage(event.data);
   });
 
+  contextMenu.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  contextMenu.addEventListener('mousedown', (event) => {
+    event.stopPropagation();
+  });
+
+  contextMenu.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
+  treeContainer.addEventListener('contextmenu', (event) => {
+    const target = event.target as HTMLElement | null;
+    const rowElement = target?.closest('.tree-row');
+    if (rowElement) {
+      return;
+    }
+
+    if (!state.selectedConnectionId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    openDirectoryContextMenu(event.clientX, event.clientY, state.rootPath);
+  });
+
   document.addEventListener('click', () => {
     hideContextMenu();
   });
 
   document.addEventListener('contextmenu', (event) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+
     const target = event.target as Node | null;
     if (!target || !contextMenu.contains(target)) {
       hideContextMenu();
@@ -367,7 +401,7 @@ function handleIncomingMessage(message: WebviewResponseMessage): void {
 
     case 'directoryLoaded': {
       state.pendingPaths.delete(message.payload.path);
-      state.directoryCache.set(message.payload.path, message.payload.entries);
+      state.directoryCache.set(message.payload.path, sortEntries(message.payload.entries));
       state.statuses.set(message.payload.connectionId, 'connected');
       renderConnections();
       renderFileManager();
@@ -543,13 +577,17 @@ function renderFileManager(): void {
     return;
   }
 
-  renderTreeLevel(state.rootPath, 0);
+  const treeFragment = renderTreeLevel(state.rootPath, 0);
+  const nodeCount = treeFragment.childNodes.length;
+  if (nodeCount > 0) {
+    treeContainer.appendChild(treeFragment);
+  }
 
   if (!state.directoryCache.has(state.rootPath) && !state.pendingPaths.has(state.rootPath)) {
     requestDirectory(state.rootPath);
   }
 
-  if (treeContainer.childElementCount === 0) {
+  if (nodeCount === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
     empty.textContent = state.pendingPaths.has(state.rootPath) ? 'Loading directory...' : 'No files found.';
@@ -557,21 +595,16 @@ function renderFileManager(): void {
   }
 }
 
-function renderTreeLevel(parentPath: string, depth: number): void {
-  const entries = [...(state.directoryCache.get(parentPath) ?? [])];
-  entries.sort((a, b) => {
-    if (a.type === b.type) {
-      return a.name.localeCompare(b.name);
-    }
-
-    return a.type === 'directory' ? -1 : 1;
-  });
+function renderTreeLevel(parentPath: string, depth: number): DocumentFragment {
+  const fragment = document.createDocumentFragment();
+  const entries = state.directoryCache.get(parentPath) ?? [];
 
   for (const entry of entries) {
     const row = document.createElement('div');
     row.className = 'tree-row';
     row.addEventListener('contextmenu', (event) => {
       event.preventDefault();
+      event.stopPropagation();
       openContextMenu(event.clientX, event.clientY, entry);
     });
 
@@ -587,6 +620,7 @@ function renderTreeLevel(parentPath: string, depth: number): void {
 
     const icon = document.createElement('span');
     icon.className = `entry-icon ${entry.type === 'directory' ? 'folder' : 'file'}`;
+    icon.textContent = getEntryIcon(entry);
 
     const name = document.createElement('span');
     name.className = 'tree-name';
@@ -594,7 +628,7 @@ function renderTreeLevel(parentPath: string, depth: number): void {
 
     if (entry.type === 'directory') {
       const isExpanded = state.expandedFolders.has(entry.path);
-      toggle.textContent = isExpanded ? '▾' : '▸';
+      toggle.textContent = isExpanded ? '⌄' : '›';
       toggle.addEventListener('click', (event) => {
         event.stopPropagation();
         toggleFolder(entry.path);
@@ -605,7 +639,7 @@ function renderTreeLevel(parentPath: string, depth: number): void {
       });
     } else {
       toggle.className = 'tree-toggle placeholder';
-      toggle.textContent = '•';
+      toggle.textContent = '';
       row.addEventListener('click', () => {
         if (!state.selectedConnectionId) {
           return;
@@ -628,12 +662,14 @@ function renderTreeLevel(parentPath: string, depth: number): void {
     main.appendChild(name);
     row.appendChild(main);
 
-    treeContainer.appendChild(row);
+    fragment.appendChild(row);
 
     if (entry.type === 'directory' && state.expandedFolders.has(entry.path)) {
-      renderTreeLevel(entry.path, depth + 1);
+      fragment.appendChild(renderTreeLevel(entry.path, depth + 1));
     }
   }
+
+  return fragment;
 }
 
 function openContextMenu(x: number, y: number, entry: RemoteEntry): void {
@@ -668,42 +704,13 @@ function openContextMenu(x: number, y: number, entry: RemoteEntry): void {
     showToast(`Cut: ${entry.name}`, 'success');
   });
 
-  if (entry.type === 'directory') {
-    addContextItem(
-      'Paste',
-      () => {
-        if (!state.selectedConnectionId || !state.clipboard) {
-          return;
-        }
-
-        const sourcePath = state.clipboard.entry.path;
-        const destinationPath = joinPath(destinationFolder, baseName(sourcePath));
-
-        if (state.clipboard.action === 'copy') {
-          postMessage({
-            type: 'copyPath',
-            payload: {
-              connectionId: state.selectedConnectionId,
-              sourcePath,
-              destinationPath,
-              isDirectory: state.clipboard.entry.type === 'directory'
-            }
-          });
-        } else {
-          postMessage({
-            type: 'movePath',
-            payload: {
-              connectionId: state.selectedConnectionId,
-              sourcePath,
-              destinationPath
-            }
-          });
-          state.clipboard = null;
-        }
-      },
-      !state.clipboard
-    );
-  }
+  addContextItem(
+    'Paste',
+    () => {
+      applyClipboardPaste(destinationFolder);
+    },
+    !state.clipboard
+  );
 
   addContextItem('New Folder', () => {
     createNewFolder(destinationFolder);
@@ -713,72 +720,43 @@ function openContextMenu(x: number, y: number, entry: RemoteEntry): void {
     createNewFile(destinationFolder);
   });
 
-  addContextItem('Move', () => {
-    if (!state.selectedConnectionId) {
-      return;
-    }
+  addContextItem('Rename', () => {
+    renameEntry(entry);
+  });
 
-    const nextPath = window.prompt('Move to path', entry.path);
-    if (!nextPath) {
-      return;
-    }
-
-    postMessage({
-      type: 'movePath',
-      payload: {
-        connectionId: state.selectedConnectionId,
-        sourcePath: entry.path,
-        destinationPath: normalizePath(nextPath)
-      }
-    });
+  addContextItem('Permission Change', () => {
+    changePermissions(entry);
   });
 
   addContextItem('Delete', () => {
     deleteEntry(entry);
   });
 
-  addContextItem('Zip Compress', () => {
-    if (!state.selectedConnectionId) {
-      return;
-    }
+  const maxLeft = Math.max(8, window.innerWidth - 220);
+  const maxTop = Math.max(8, window.innerHeight - 280);
+  contextMenu.style.left = `${Math.min(Math.max(8, x), maxLeft)}px`;
+  contextMenu.style.top = `${Math.min(Math.max(8, y), maxTop)}px`;
+  contextMenu.classList.remove('hidden');
+}
 
-    const defaultArchiveName = `${entry.name}.zip`;
-    const archiveName = window.prompt('Archive file name', defaultArchiveName);
-    if (!archiveName) {
-      return;
-    }
+function openDirectoryContextMenu(x: number, y: number, directoryPath: string): void {
+  contextMenu.textContent = '';
 
-    postMessage({
-      type: 'compressPath',
-      payload: {
-        connectionId: state.selectedConnectionId,
-        sourcePath: entry.path,
-        archivePath: joinPath(dirName(entry.path), sanitizeName(archiveName))
-      }
-    });
+  addContextItem(
+    'Paste',
+    () => {
+      applyClipboardPaste(directoryPath);
+    },
+    !state.clipboard
+  );
+
+  addContextItem('New Folder', () => {
+    createNewFolder(directoryPath);
   });
 
-  if (entry.type === 'file' && entry.name.toLowerCase().endsWith('.zip')) {
-    addContextItem('Extract', () => {
-      if (!state.selectedConnectionId) {
-        return;
-      }
-
-      const destinationPath = window.prompt('Extract destination', dirName(entry.path));
-      if (!destinationPath) {
-        return;
-      }
-
-      postMessage({
-        type: 'extractArchive',
-        payload: {
-          connectionId: state.selectedConnectionId,
-          archivePath: entry.path,
-          destinationPath: normalizePath(destinationPath)
-        }
-      });
-    });
-  }
+  addContextItem('New File', () => {
+    createNewFile(directoryPath);
+  });
 
   const maxLeft = Math.max(8, window.innerWidth - 220);
   const maxTop = Math.max(8, window.innerHeight - 280);
@@ -827,6 +805,9 @@ function requestDirectory(directoryPath: string): void {
   }
 
   const normalizedPath = normalizePath(directoryPath);
+  if (state.pendingPaths.has(normalizedPath)) {
+    return;
+  }
   state.pendingPaths.add(normalizedPath);
 
   postMessage({
@@ -868,17 +849,11 @@ function createNewFolder(parentPath: string): void {
     return;
   }
 
-  const folderName = window.prompt('Folder name');
-  if (!folderName) {
-    return;
-  }
-
   postMessage({
-    type: 'createFolder',
+    type: 'createFolderInteractive',
     payload: {
       connectionId: state.selectedConnectionId,
-      parentPath: normalizePath(parentPath),
-      folderName
+      parentPath: normalizePath(parentPath)
     }
   });
 }
@@ -889,17 +864,72 @@ function createNewFile(parentPath: string): void {
     return;
   }
 
-  const fileName = window.prompt('File name', 'new-file.txt');
-  if (!fileName) {
+  postMessage({
+    type: 'createFileInteractive',
+    payload: {
+      connectionId: state.selectedConnectionId,
+      parentPath: normalizePath(parentPath)
+    }
+  });
+}
+
+function applyClipboardPaste(destinationFolder: string): void {
+  if (!state.selectedConnectionId || !state.clipboard) {
+    return;
+  }
+
+  const sourcePath = state.clipboard.entry.path;
+  const destinationPath = joinPath(destinationFolder, baseName(sourcePath));
+
+  if (state.clipboard.action === 'copy') {
+    postMessage({
+      type: 'copyPath',
+      payload: {
+        connectionId: state.selectedConnectionId,
+        sourcePath,
+        destinationPath,
+        isDirectory: state.clipboard.entry.type === 'directory'
+      }
+    });
     return;
   }
 
   postMessage({
-    type: 'createFile',
+    type: 'movePath',
     payload: {
       connectionId: state.selectedConnectionId,
-      parentPath: normalizePath(parentPath),
-      fileName
+      sourcePath,
+      destinationPath
+    }
+  });
+  state.clipboard = null;
+}
+
+function renameEntry(entry: RemoteEntry): void {
+  if (!state.selectedConnectionId) {
+    return;
+  }
+
+  postMessage({
+    type: 'renamePathInteractive',
+    payload: {
+      connectionId: state.selectedConnectionId,
+      sourcePath: entry.path,
+      currentName: baseName(entry.path)
+    }
+  });
+}
+
+function changePermissions(entry: RemoteEntry): void {
+  if (!state.selectedConnectionId) {
+    return;
+  }
+
+  postMessage({
+    type: 'setPermissionsInteractive',
+    payload: {
+      connectionId: state.selectedConnectionId,
+      remotePath: entry.path
     }
   });
 }
@@ -909,16 +939,13 @@ function deleteEntry(entry: RemoteEntry): void {
     return;
   }
 
-  if (!window.confirm(`Delete ${entry.name}?`)) {
-    return;
-  }
-
   postMessage({
-    type: 'deletePath',
+    type: 'deletePathInteractive',
     payload: {
       connectionId: state.selectedConnectionId,
       remotePath: entry.path,
-      isDirectory: entry.type === 'directory'
+      isDirectory: entry.type === 'directory',
+      name: entry.name
     }
   });
 }
@@ -954,6 +981,40 @@ function dirName(targetPath: string): string {
   const parts = normalized.split('/').filter((part) => part.length > 0);
   parts.pop();
   return parts.length === 0 ? '/' : `/${parts.join('/')}`;
+}
+
+function sortEntries(entries: RemoteEntry[]): RemoteEntry[] {
+  return [...entries].sort((a, b) => {
+    if (a.type !== b.type) {
+      return a.type === 'directory' ? -1 : 1;
+    }
+    return entryNameCollator.compare(a.name, b.name);
+  });
+}
+
+function getEntryIcon(entry: RemoteEntry): string {
+  if (entry.type === 'directory') {
+    return '📁';
+  }
+
+  const lowerName = entry.name.toLowerCase();
+  if (lowerName.endsWith('.zip') || lowerName.endsWith('.tar') || lowerName.endsWith('.gz')) {
+    return '🗜';
+  }
+  if (lowerName.endsWith('.json') || lowerName.endsWith('.yaml') || lowerName.endsWith('.yml')) {
+    return '🧩';
+  }
+  if (lowerName.endsWith('.ts') || lowerName.endsWith('.js') || lowerName.endsWith('.tsx') || lowerName.endsWith('.jsx')) {
+    return '⌘';
+  }
+  if (lowerName.endsWith('.md') || lowerName.endsWith('.txt')) {
+    return '📄';
+  }
+  if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') || lowerName.endsWith('.svg')) {
+    return '🖼';
+  }
+
+  return '📄';
 }
 
 function createActionButton(label: string, onClick: () => void): HTMLButtonElement {
